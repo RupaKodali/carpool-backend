@@ -1,0 +1,67 @@
+# Binary files
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.out
+*.o
+*.a
+
+# Go dependencies
+/bin/
+/pkg/
+/vendor/
+
+# Cache & Logs
+*.log
+*.cache
+*.tmp
+/tmp/
+*.test
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+
+# Go-specific
+go.sum
+go.work
+go.work.sum
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.DS_Store
+
+# Build artifacts
+/dist/
+/node_modules/
+coverage.out
+
+# Docker
+docker-compose.override.yml
+**/Dockerfile
+
+# Database dumps or local data
+*.sql
+*.db
+*.sqlite
+/migrations/*.sql
+
+# Git hooks
+.husky/
+
+# OpenAPI/Swagger auto-generated files
+/swagger/
+*.swagger.json
+*.swagger.yml
+
+
