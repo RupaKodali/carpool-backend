@@ -6,6 +6,7 @@ This repository contains the backend, built using **Golang** with the **Echo fra
 ---
 
 ## 🚀 Features
+
 - 🛂 **User Authentication** (JWT-based)
 - 📍 **Nearby Ride Listings**
 - 🚘 **Ride Creation & Management**
@@ -17,6 +18,7 @@ This repository contains the backend, built using **Golang** with the **Echo fra
 ---
 
 ## 🏗️ Tech Stack
+
 - **Backend:** Golang (Echo)
 - **Database:** MySQL
 - **Authentication:** JWT
@@ -29,11 +31,13 @@ This repository contains the backend, built using **Golang** with the **Echo fra
 ## 🔧 Setup & Installation
 
 ### 1️⃣ Prerequisites
+
 - Install **Golang** (v1.19 or later)
 - Install **MySQL**
 - Create a `.env` file (refer to `.env.example`)
 
 ### 2️⃣ Clone the Repository
+
 ```sh
 git clone https://github.com/yourusername/kommut-backend.git
 cd kommut-backend

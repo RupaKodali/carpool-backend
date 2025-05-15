@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"gorm.io/gorm"
@@ -52,30 +53,47 @@ func (c *Client) ReadMessages(db *gorm.DB, wm *WebSocketManager) {
 			break
 		}
 
-		// Parse message JSON into the Message struct
-		var msg models.Message
+		// Parse received message
+		var msg map[string]interface{}
 		if err := json.Unmarshal(messageBytes, &msg); err != nil {
 			log.Println("JSON Parse Error:", err)
 			continue
 		}
 
-		// Store message using GORM
-		newMessage := models.Message{
-			ConversationID: msg.ConversationID,
-			SenderID:       msg.SenderID,
-			ReceiverID:     msg.ReceiverID,
-			Message:        msg.Message,
-			Status:         "sent",
+		// ✅ Handle Read Receipt
+		if msg["type"] == "read" {
+			conversationID, ok := msg["conversation_id"].(float64)
+			if !ok {
+				log.Println("Invalid conversation_id in read receipt")
+				continue
+			}
+
+			// ✅ Mark messages as "read"
+			db.Model(&models.Message{}).
+				Where("conversation_id = ? AND receiver_id = ? AND status = 'sent'", int(conversationID), c.UserID).
+				Update("status", "read")
+
+			log.Printf("Marked messages as read in conversation %d for user %d", int(conversationID), c.UserID)
+			continue
 		}
 
-		// Insert message into the database
-		if err := db.Create(&newMessage).Error; err != nil {
+		// ✅ Otherwise, process chat message
+		var chatMessage models.Message
+		if err := json.Unmarshal(messageBytes, &chatMessage); err != nil {
+			log.Println("Message Parse Error:", err)
+			continue
+		}
+
+		// Save message to database
+		chatMessage.CreatedAt = time.Now()
+		chatMessage.Status = "sent"
+		if err := db.Create(&chatMessage).Error; err != nil {
 			log.Println("DB Insert Error:", err)
 			continue
 		}
 
-		// Send message to the recipient via WebSocket
-		wm.SendMessage(msg.ReceiverID, messageBytes)
+		// Send message to the receiver if they are online
+		wm.SendMessage(chatMessage.ReceiverID, messageBytes)
 	}
 }
 

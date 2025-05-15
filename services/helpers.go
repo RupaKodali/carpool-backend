@@ -95,8 +95,15 @@ func ListEntities(db *gorm.DB, model interface{}, params QueryParams, searchable
 				query = query.Where(fmt.Sprintf("%s <= ?", field), to)
 			}
 		default:
-			// Normal Field Filters
-			query = query.Where(fmt.Sprintf("%s = ?", field), value)
+			// Special case for Origin - partial match
+			if strings.ToLower(field) == "origin" || strings.ToLower(field) == "destination" {
+				if strVal, ok := value.(string); ok {
+					query = query.Where(fmt.Sprintf("%s LIKE ?", field), "%"+strVal+"%")
+				}
+			} else {
+				// Normal Field Filters
+				query = query.Where(fmt.Sprintf("%s = ?", field), value)
+			}
 		}
 	}
 

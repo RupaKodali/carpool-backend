@@ -28,6 +28,9 @@ func NewMessageService(db *gorm.DB) MessageService {
 func (s *chatService) SendMessage(message *models.Message) error {
 	message.CreatedAt = time.Now()
 
+	if message.Status == "" {
+		message.Status = "sent" // Default value
+	}
 	// Check if conversation already exists
 	var conversation models.Conversation
 	err := s.db.Where("(user1_id = ? AND user2_id = ?) OR (user1_id = ? AND user2_id = ?)",

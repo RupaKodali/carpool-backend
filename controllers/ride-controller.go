@@ -4,7 +4,6 @@ import (
 	"carpool-backend/models"
 	"carpool-backend/services"
 	"carpool-backend/utils"
-	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -37,6 +36,7 @@ func (h *RideController) CreateRide(c echo.Context) error {
 	if err := c.Bind(&ride); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
+
 	ride.DriverID = loggedInUserID
 	err = h.RideService.CreateRide(&ride)
 	if err != nil {
@@ -185,13 +185,40 @@ func (h *RideController) MatchRides(c echo.Context) error {
 	params := services.ParseQueryParams(c)
 
 	// Time-based filtering (±2 hours from given departure time)
-	const maxTimeDiffHours = 2.0 // Maximum acceptable time difference in hours
+	const maxTimeDiffHours = 24.0 // Maximum acceptable time difference in hours
 	if request.DepartureAt != nil {
-		startTime := request.DepartureAt.Add(-time.Hour * time.Duration(maxTimeDiffHours))
-		endTime := request.DepartureAt.Add(time.Hour * time.Duration(maxTimeDiffHours))
+		// startTime := request.DepartureAt.Add(-time.Hour * time.Duration(maxTimeDiffHours))
+		// endTime := request.DepartureAt.Add(time.Hour * time.Duration(maxTimeDiffHours))
+		// params.Filters["departure_at"] = map[string]interface{}{
+		// 	"from": startTime,
+		// 	"to":   endTime,
+		// }
+		now := time.Now().In(request.DepartureAt.Location())
+		requestDate := request.DepartureAt
+
+		isSameDay := now.Year() == requestDate.Year() &&
+			now.Month() == requestDate.Month() &&
+			now.Day() == requestDate.Day()
+
+		var fromTime, toTime time.Time
+
+		if isSameDay {
+			fromTime = now
+			toTime = time.Date(
+				requestDate.Year(), requestDate.Month(), requestDate.Day(),
+				23, 59, 59, int(time.Second-time.Nanosecond), requestDate.Location(),
+			)
+		} else {
+			fromTime = time.Date(
+				requestDate.Year(), requestDate.Month(), requestDate.Day(),
+				0, 0, 0, 0, requestDate.Location(),
+			)
+			toTime = fromTime.Add(24 * time.Hour).Add(-time.Nanosecond)
+		}
+
 		params.Filters["departure_at"] = map[string]interface{}{
-			"from": startTime,
-			"to":   endTime,
+			"from": fromTime,
+			"to":   toTime,
 		}
 	}
 
@@ -200,9 +227,6 @@ func (h *RideController) MatchRides(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to fetch available rides"})
 	}
-
-	fmt.Printf("DEBUG: Type of result.Data: %T\n", result.Data)
-	fmt.Printf("DEBUG: Value of result.Data: %+v\n", result.Data)
 
 	// Extract rides from paginated response
 	var availableRides []models.Ride

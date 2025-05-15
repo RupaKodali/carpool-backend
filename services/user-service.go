@@ -32,11 +32,11 @@ func NewUserService(db *gorm.DB) UserService {
 func (s *userService) RegisterUser(user *models.User) error {
 	// Check if email already exists
 	var count int64
-	if err := s.db.Model(&models.User{}).Where("email = ?", user.Email).Count(&count).Error; err != nil {
+	if err := s.db.Model(&models.User{}).Where("email = ? || phone = ?", user.Email, user.Phone).Count(&count).Error; err != nil {
 		return errors.New("failed to check email availability")
 	}
 	if count > 0 {
-		return errors.New("email already in use")
+		return errors.New("email or phone already in use")
 	}
 
 	// Hash the password

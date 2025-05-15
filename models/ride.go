@@ -14,6 +14,10 @@ type Ride struct {
 	DepartureAt    time.Time `json:"departure_at" db:"departure_at" validate:"required"`
 	SeatsAvailable int       `json:"seats_available" db:"seats_available" validate:"required,min=1,max=7"`
 	Route          string    `json:"route,omitempty" db:"route" validate:"omitempty"`
+	Distance       float64   `json:"distance" db:"distance" validate:"omitempty"`
+	DistanceType   string    `json:"distance_type" db:"distance_type" validate:"omitempty"`
+	Duration       string    `json:"duration" db:"duration" validate:"omitempty"`
+	Price          float64   `json:"price" db:"price" validate:"omitempty"`
 	CreatedAt      time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
 }

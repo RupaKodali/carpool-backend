@@ -3,6 +3,7 @@ package controllers
 import (
 	"carpool-backend/models"
 	"carpool-backend/services"
+	"carpool-backend/utils"
 	"carpool-backend/websocket"
 	"encoding/json"
 	"net/http"
@@ -33,14 +34,14 @@ func (h *MessageController) SendMessage(c echo.Context) error {
 	}
 
 	// Retrieve sender ID from JWT claims
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
+	userID, err := utils.GetUserIDFromToken(c)
+	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Unauthorized"})
 	}
 	message.SenderID = userID
 
 	// Store message in DB
-	err := h.MessageService.SendMessage(&message)
+	err = h.MessageService.SendMessage(&message)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
 	}
@@ -55,8 +56,8 @@ func (h *MessageController) SendMessage(c echo.Context) error {
 // GetMessageHistory handles fetching chat history (GET /messages/:user_id)
 func (h *MessageController) GetMessageHistory(c echo.Context) error {
 	// Get current logged-in user ID from JWT
-	currentUserID, ok := c.Get("user_id").(int)
-	if !ok {
+	currentUserID, err := utils.GetUserIDFromToken(c)
+	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Unauthorized"})
 	}
 
@@ -82,13 +83,17 @@ func (h *MessageController) GetMessageHistory(c echo.Context) error {
 func (h *MessageController) MarkMessagesAsRead(c echo.Context) error {
 	var request struct {
 		ConversationID int `json:"conversation_id"`
-		UserID         int `json:"user_id"`
+	}
+
+	UserID, err := utils.GetUserIDFromToken(c)
+	if err != nil {
+		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Unauthorized"})
 	}
 	if err := c.Bind(&request); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid request"})
 	}
 
-	err := h.MessageService.MarkMessagesAsRead(request.UserID, request.ConversationID)
+	err = h.MessageService.MarkMessagesAsRead(UserID, request.ConversationID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "Failed to update message status"})
 	}
@@ -98,8 +103,8 @@ func (h *MessageController) MarkMessagesAsRead(c echo.Context) error {
 
 func (h *MessageController) GetConversations(c echo.Context) error {
 	// Get current logged-in user ID from JWT
-	userID, ok := c.Get("user_id").(int)
-	if !ok {
+	userID, err := utils.GetUserIDFromToken(c)
+	if err != nil {
 		return c.JSON(http.StatusUnauthorized, echo.Map{"error": "Unauthorized"})
 	}
 
