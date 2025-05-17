@@ -199,11 +199,13 @@ func (h *RideController) MatchRides(c echo.Context) error {
 	if request.FromDateTime != nil {
 		fromDate := *request.FromDateTime
 
+		// If only date was given (e.g., time is 00:00:00), or it's today and time has passed
 		if fromDate.Hour() == 0 && fromDate.Minute() == 0 && fromDate.Second() == 0 {
 			if fromDate.Year() == now.Year() && fromDate.YearDay() == now.YearDay() {
-				from = now
+				from = now // current time onwards today
 			} else {
-				from = time.Date(fromDate.Year(), fromDate.Month(), fromDate.Day(), 0, 0, 0, 0, now.Location())
+				// start of the given day
+				from = time.Date(fromDate.Year(), fromDate.Month(), fromDate.Day(), 0, 0, 0, 0, fromDate.Location())
 			}
 		} else {
 			if fromDate.Before(now) {
@@ -218,19 +220,15 @@ func (h *RideController) MatchRides(c echo.Context) error {
 
 	if request.ToDateTime != nil {
 		toDate := *request.ToDateTime
-
+		// If no time part was given, assume end of that day
 		if toDate.Hour() == 0 && toDate.Minute() == 0 && toDate.Second() == 0 {
-			to = time.Date(toDate.Year(), toDate.Month(), toDate.Day(), 23, 59, 59, 999999999, now.Location())
+			to = time.Date(toDate.Year(), toDate.Month(), toDate.Day(), 23, 59, 59, int(time.Second-time.Nanosecond), toDate.Location())
 		} else {
 			to = toDate
 		}
-	} else if request.FromDateTime != nil {
-		// If ToDateTime not given, set end of fromDate's day
-		fd := *request.FromDateTime
-		to = time.Date(fd.Year(), fd.Month(), fd.Day(), 23, 59, 59, 999999999, now.Location())
 	} else {
-		// Default: end of today
-		to = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 999999999, now.Location())
+		// Default to end of from_date if not given
+		to = time.Date(from.Year(), from.Month(), from.Day(), 23, 59, 59, int(time.Second-time.Nanosecond), from.Location())
 	}
 
 	// Final check: ensure from < to
