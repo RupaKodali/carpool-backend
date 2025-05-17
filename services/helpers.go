@@ -12,11 +12,12 @@ import (
 
 // QueryParams defines the structure for filtering, sorting, and pagination
 type QueryParams struct {
-	Filters map[string]interface{} // field:value pairs for filtering
-	Sort    []SortField            // fields to sort by
-	Page    int                    // page number (1-based)
-	Limit   int                    // items per page
-	Search  string                 // search term for text fields
+	Filters  map[string]interface{} // field:value pairs for filtering
+	Sort     []SortField            // fields to sort by
+	Page     int                    // page number (1-based)
+	Limit    int                    // items per page
+	Search   string                 // search term for text fields
+	Preloads []string
 }
 
 // SortField represents a field to sort by and its direction
@@ -82,6 +83,10 @@ func ParseQueryParams(c echo.Context) QueryParams {
 // ListEntities is a dynamic function for listing with filters, search, sorting, and pagination
 func ListEntities(db *gorm.DB, model interface{}, params QueryParams, searchableFields []string) (*PaginatedResponse, error) {
 	query := db.Model(model)
+
+	for _, preload := range params.Preloads {
+		query = query.Preload(preload)
+	}
 
 	// Apply Dynamic Filters
 	for field, value := range params.Filters {

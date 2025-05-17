@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"carpool-backend/dto"
 	"carpool-backend/models"
 	"carpool-backend/services"
 	"carpool-backend/utils"
@@ -53,12 +54,16 @@ func (h *RideController) GetRide(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid ride ID"})
 	}
 
-	ride, err := h.RideService.GetRideByID(id)
+	ride, err := h.RideService.GetRideByID(id, "Driver")
 	if err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
 	}
+	dtoRide, err := dto.MapToDTOs[models.Ride, dto.RideResponseDTO]([]models.Ride{*ride})
+	if err != nil || len(dtoRide) == 0 {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to map ride to DTO"})
+	}
 
-	return c.JSON(http.StatusOK, ride)
+	return c.JSON(http.StatusOK, dtoRide[0])
 }
 
 // UpdateRide handles PUT /rides/:id
@@ -149,6 +154,8 @@ func (h *RideController) ListRides(c echo.Context) error {
 		params.Filters["departure_at"] = map[string]interface{}{"from": today}
 	}
 
+	params.Preloads = append(params.Preloads, "Driver")
+
 	// Fetch rides with dynamic filters
 	response, err := h.RideService.ListRides(params)
 	if err != nil {
@@ -166,8 +173,10 @@ func (h *RideController) MatchRides(c echo.Context) error {
 		OriginLng      float64    `json:"origin_lng" validate:"required"`
 		DestinationLat float64    `json:"destination_lat" validate:"required"`
 		DestinationLng float64    `json:"destination_lng" validate:"required"`
-		DepartureAt    *time.Time `json:"departure_at"`
-		Radius         *float64   `json:"radius"` // Optional, defaults to 0.5 km if not provided
+		FromDateTime   *time.Time `json:"from_datetime" validate:"required"`
+		ToDateTime     *time.Time `json:"to_datetime" validate:"required"`
+		// DepartureAt    *time.Time `json:"departure_at"`
+		Radius *float64 `json:"radius"` // Optional, defaults to 0.5 km if not provided
 
 	}
 
@@ -184,43 +193,55 @@ func (h *RideController) MatchRides(c echo.Context) error {
 	// Initialize query parameters
 	params := services.ParseQueryParams(c)
 
-	// Time-based filtering (±2 hours from given departure time)
-	const maxTimeDiffHours = 24.0 // Maximum acceptable time difference in hours
-	if request.DepartureAt != nil {
-		// startTime := request.DepartureAt.Add(-time.Hour * time.Duration(maxTimeDiffHours))
-		// endTime := request.DepartureAt.Add(time.Hour * time.Duration(maxTimeDiffHours))
-		// params.Filters["departure_at"] = map[string]interface{}{
-		// 	"from": startTime,
-		// 	"to":   endTime,
-		// }
-		now := time.Now().In(request.DepartureAt.Location())
-		requestDate := request.DepartureAt
+	now := time.Now()
+	var from, to time.Time
 
-		isSameDay := now.Year() == requestDate.Year() &&
-			now.Month() == requestDate.Month() &&
-			now.Day() == requestDate.Day()
+	if request.FromDateTime != nil {
+		fromDate := *request.FromDateTime
 
-		var fromTime, toTime time.Time
-
-		if isSameDay {
-			fromTime = now
-			toTime = time.Date(
-				requestDate.Year(), requestDate.Month(), requestDate.Day(),
-				23, 59, 59, int(time.Second-time.Nanosecond), requestDate.Location(),
-			)
+		// If only date was given (e.g., time is 00:00:00), or it's today and time has passed
+		if fromDate.Hour() == 0 && fromDate.Minute() == 0 && fromDate.Second() == 0 {
+			if fromDate.Year() == now.Year() && fromDate.YearDay() == now.YearDay() {
+				from = now // current time onwards today
+			} else {
+				// start of the given day
+				from = time.Date(fromDate.Year(), fromDate.Month(), fromDate.Day(), 0, 0, 0, 0, fromDate.Location())
+			}
 		} else {
-			fromTime = time.Date(
-				requestDate.Year(), requestDate.Month(), requestDate.Day(),
-				0, 0, 0, 0, requestDate.Location(),
-			)
-			toTime = fromTime.Add(24 * time.Hour).Add(-time.Nanosecond)
+			if fromDate.Before(now) {
+				from = now
+			} else {
+				from = fromDate
+			}
 		}
-
-		params.Filters["departure_at"] = map[string]interface{}{
-			"from": fromTime,
-			"to":   toTime,
-		}
+	} else {
+		from = now
 	}
+
+	if request.ToDateTime != nil {
+		toDate := *request.ToDateTime
+		// If no time part was given, assume end of that day
+		if toDate.Hour() == 0 && toDate.Minute() == 0 && toDate.Second() == 0 {
+			to = time.Date(toDate.Year(), toDate.Month(), toDate.Day(), 23, 59, 59, int(time.Second-time.Nanosecond), toDate.Location())
+		} else {
+			to = toDate
+		}
+	} else {
+		// Default to end of today if not given
+		to = time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, int(time.Second-time.Nanosecond), now.Location())
+	}
+
+	// Final check: ensure from < to
+	if to.Before(from) {
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "'to_datetime' must be after 'from_datetime'"})
+	}
+
+	params.Filters["departure_at"] = map[string]interface{}{
+		"from": from,
+		"to":   to,
+	}
+
+	params.Preloads = append(params.Preloads, "Driver")
 
 	// Fetch available rides
 	result, err := h.RideService.ListRides(params)
@@ -247,8 +268,12 @@ func (h *RideController) MatchRides(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": "No matching rides found"})
 	}
 
+	dtoRides, err := dto.MapToDTOs[models.Ride, dto.RideListResponseDTO](matchingRides)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to map to DTO"})
+	}
 	// Update response data with matched rides
-	result.Data = matchingRides
+	result.Data = dtoRides
 
 	return c.JSON(http.StatusOK, result)
 }

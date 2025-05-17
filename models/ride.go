@@ -5,6 +5,7 @@ import "time"
 type Ride struct {
 	ID             int       `json:"id" db:"id"`
 	DriverID       int       `json:"driver_id" db:"driver_id" validate:"required"`
+	Driver         User      `json:"driver" gorm:"foreignKey:DriverID;references:ID"`
 	Origin         string    `json:"origin" db:"origin" validate:"required,min=3,max=255"`
 	OriginLat      float64   `json:"origin_lat" db:"origin_lat" validate:"required"`
 	OriginLng      float64   `json:"origin_lng" db:"origin_lng" validate:"required"`

@@ -10,7 +10,7 @@ import (
 
 type RideService interface {
 	CreateRide(ride *models.Ride) error
-	GetRideByID(id int) (*models.Ride, error)
+	GetRideByID(id int, preloads ...string) (*models.Ride, error)
 	UpdateRide(existingRide *models.Ride, updates map[string]interface{}) error
 	DeleteRide(id int) error
 	ListRides(params QueryParams) (*PaginatedResponse, error)
@@ -37,8 +37,18 @@ func (s *rideService) CreateRide(ride *models.Ride) error {
 }
 
 // GetRideByID retrieves a ride by its ID
-func (s *rideService) GetRideByID(id int) (*models.Ride, error) {
+func (s *rideService) GetRideByID(id int, preloads ...string) (*models.Ride, error) {
 	var ride models.Ride
+
+	db := s.db
+
+	for _, preload := range preloads {
+		db = db.Preload(preload)
+	}
+
+	if err := db.First(&ride, id).Error; err != nil {
+		return nil, errors.New("ride not found")
+	}
 	if err := s.db.First(&ride, id).Error; err != nil {
 		return nil, errors.New("ride not found")
 	}
