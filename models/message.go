@@ -1,14 +1,15 @@
 package models
 
-import "time"
+import "gorm.io/gorm"
 
 type Message struct {
-	ID             int       `json:"id" db:"id"`
-	ConversationID int       `json:"conversation_id" db:"conversation_id" validate:"required"`
-	SenderID       int       `json:"sender_id" db:"sender_id" validate:"required"`
-	ReceiverID     int       `json:"receiver_id" db:"receiver_id" validate:"required"`
-	Message        string    `json:"message" db:"message" validate:"required,min=1,max=1000"`
-	Status         string    `json:"status" db:"status" validate:"oneof=sent delivered read"`
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
+	gorm.Model
+	ConversationID uint
+	Conversation   Conversation `gorm:"foreignKey:ConversationID;references:ID"`
+	SenderID       uint
+	Sender         User `gorm:"foreignKey:SenderID;references:ID"`
+	ReceiverID     uint
+	Receiver       User   `gorm:"foreignKey:ReceiverID;references:ID"`
+	Message        string `gorm:"type:text;not null"`
+	Status         string `gorm:"type:enum('sent','delivered','read');default:sent"`
 }

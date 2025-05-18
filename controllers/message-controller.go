@@ -62,10 +62,11 @@ func (h *MessageController) GetMessageHistory(c echo.Context) error {
 	}
 
 	// Get chat partner's user ID from URL
-	chatUserID, err := strconv.Atoi(c.Param("user_id"))
+	UserId, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid user ID"})
 	}
+	chatUserID := uint(UserId)
 
 	// Parse query parameters for pagination & search
 	params := services.ParseQueryParams(c)
@@ -82,7 +83,7 @@ func (h *MessageController) GetMessageHistory(c echo.Context) error {
 // MarkMessagesAsRead handles marking messages as read (PUT /messages/read)
 func (h *MessageController) MarkMessagesAsRead(c echo.Context) error {
 	var request struct {
-		ConversationID int `json:"conversation_id"`
+		ConversationID uint `json:"conversation_id"`
 	}
 
 	UserID, err := utils.GetUserIDFromToken(c)

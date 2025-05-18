@@ -19,13 +19,23 @@ import (
 )
 
 func main() {
+	args := os.Args
+	migrateDB := false
+
+	if len(args) > 1 {
+		for _, arg := range args[1:] {
+			if arg == "--migrateDB" {
+				migrateDB = true
+			}
+		}
+	}
 	// Load .env file
 	if err := godotenv.Load(); err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
 	// Initialize database connection
-	db, err := database.ConnectDb()
+	db, err := database.ConnectDb(migrateDB)
 	if err != nil {
 		log.Fatal("Failed to connect to database:", err)
 	}

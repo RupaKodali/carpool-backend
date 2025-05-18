@@ -30,7 +30,7 @@ func (h *RequiredRideController) CreateRequiredRide(c echo.Context) error {
 	if err := c.Bind(&ride); err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid input"})
 	}
-	ride.UserID = loggedInUserID
+	ride.ID = loggedInUserID
 	err = h.RequiredRideService.CreateRequiredRide(&ride)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": err.Error()})
@@ -58,17 +58,18 @@ func (h *RequiredRideController) DeleteRequiredRide(c echo.Context) error {
 	}
 
 	// Get ride ID from request param
-	id, err := strconv.Atoi(c.Param("id"))
+	id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid required ride ID"})
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid booking ID"})
 	}
 
+	id := uint(id64)
 	// Check if the logged-in user is the owner of the ride
 	ride, err := h.RequiredRideService.GetRequiredRides(id)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": "Required ride not found"})
 	}
-	if ride.UserID != loggedInUserID {
+	if ride.ID != loggedInUserID {
 		return c.JSON(http.StatusForbidden, echo.Map{"error": "You are not authorized to delete this required ride"})
 	}
 

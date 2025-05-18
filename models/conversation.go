@@ -1,11 +1,11 @@
 package models
 
-import "time"
+import "gorm.io/gorm"
 
 type Conversation struct {
-	ID        int       `json:"id" db:"id"`
-	User1ID   int       `json:"user1_id" db:"user1_id" validate:"required"`
-	User2ID   int       `json:"user2_id" db:"user2_id" validate:"required"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
+	gorm.Model
+	User1ID uint
+	User2ID uint
+	User1   User `gorm:"foreignKey:User1ID;references:ID"`
+	User2   User `gorm:"foreignKey:User2ID;references:ID"`
 }

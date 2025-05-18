@@ -25,13 +25,14 @@ func HandleWebSocketConnection(wm *WebSocketManager, db *gorm.DB, w http.Respons
 		return
 	}
 
-	userID, err := strconv.Atoi(r.URL.Query().Get("user_id"))
+	id64, err := strconv.ParseUint(r.URL.Query().Get("user_id"), 10, 64)
 	if err != nil {
 		log.Println("Invalid User ID")
 		conn.Close()
 		return
 	}
 
+	userID := uint(id64)
 	client := &Client{Conn: conn, UserID: userID, Send: make(chan []byte)}
 	wm.register <- client
 

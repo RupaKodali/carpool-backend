@@ -10,13 +10,13 @@ import (
 // Client represents a WebSocket connection
 type Client struct {
 	Conn   *websocket.Conn
-	UserID int
+	UserID uint
 	Send   chan []byte
 }
 
 // WebSocketManager manages active WebSocket connections
 type WebSocketManager struct {
-	clients    map[int]*Client
+	clients    map[uint]*Client
 	register   chan *Client
 	unregister chan *Client
 	broadcast  chan []byte
@@ -26,7 +26,7 @@ type WebSocketManager struct {
 // NewWebSocketManager initializes WebSocket manager
 func NewWebSocketManager() *WebSocketManager {
 	return &WebSocketManager{
-		clients:    make(map[int]*Client),
+		clients:    make(map[uint]*Client),
 		register:   make(chan *Client),
 		unregister: make(chan *Client),
 		broadcast:  make(chan []byte),
@@ -60,7 +60,7 @@ func (wm *WebSocketManager) Run() {
 }
 
 // SendMessage sends a message to a specific user
-func (wm *WebSocketManager) SendMessage(userID int, message []byte) {
+func (wm *WebSocketManager) SendMessage(userID uint, message []byte) {
 	wm.mu.Lock()
 	if client, ok := wm.clients[userID]; ok {
 		client.Send <- message

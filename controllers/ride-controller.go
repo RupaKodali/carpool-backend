@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/copier"
 	"github.com/labstack/echo/v4"
 )
 
@@ -49,21 +50,25 @@ func (h *RideController) CreateRide(c echo.Context) error {
 
 // GetRide handles GET /rides/:id
 func (h *RideController) GetRide(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+	id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid ride ID"})
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid booking ID"})
 	}
+
+	id := uint(id64)
 
 	ride, err := h.RideService.GetRideByID(id, "Driver")
 	if err != nil {
 		return c.JSON(http.StatusNotFound, echo.Map{"error": err.Error()})
 	}
-	dtoRide, err := dto.MapToDTOs[models.Ride, dto.RideResponseDTO]([]models.Ride{*ride})
-	if err != nil || len(dtoRide) == 0 {
+	var dtoRide dto.RideResponseDTO
+	err = copier.Copy(&dtoRide, ride) // ride is *models.Ride
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to map ride to DTO"})
 	}
 
-	return c.JSON(http.StatusOK, dtoRide[0])
+	return c.JSON(http.StatusOK, dtoRide)
+
 }
 
 // UpdateRide handles PUT /rides/:id
@@ -75,10 +80,12 @@ func (h *RideController) UpdateRide(c echo.Context) error {
 	}
 
 	// Get ride ID from request param
-	id, err := strconv.Atoi(c.Param("id"))
+	id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid ride ID"})
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid booking ID"})
 	}
+
+	id := uint(id64)
 
 	// Check if the logged-in user is the owner of the ride
 	ride, err := h.RideService.GetRideByID(id)
@@ -115,10 +122,12 @@ func (h *RideController) DeleteRide(c echo.Context) error {
 	}
 
 	// Get ride ID from request param
-	id, err := strconv.Atoi(c.Param("id"))
+	id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid ride ID"})
+		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid booking ID"})
 	}
+
+	id := uint(id64)
 
 	// Check if the logged-in user is the owner of the ride
 	ride, err := h.RideService.GetRideByID(id)
@@ -176,7 +185,7 @@ func (h *RideController) MatchRides(c echo.Context) error {
 		FromDateTime   *time.Time `json:"from_datetime" validate:"required"`
 		ToDateTime     *time.Time `json:"to_datetime" validate:"required"`
 		// DepartureAt    *time.Time `json:"departure_at"`
-		Radius *float64 `json:"radius"` // Optional, defaults to 0.5 km if not provided
+		Radius *float64 `json:"radius"` // Optional, defaults to 0.5 miles if not provided
 
 	}
 
@@ -265,15 +274,14 @@ func (h *RideController) MatchRides(c echo.Context) error {
 		availableRides,
 	)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, echo.Map{"error": "No matching rides found"})
+		return c.JSON(http.StatusOK, echo.Map{"error": "No matching rides found"})
 	}
 
-	dtoRides, err := dto.MapToDTOs[models.Ride, dto.RideListResponseDTO](matchingRides)
+	var dtoRides []dto.RideListResponseDTO
+	err = copier.Copy(&dtoRides, &matchingRides)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, echo.Map{"error": "failed to map to DTO"})
 	}
-	// Update response data with matched rides
 	result.Data = dtoRides
-
 	return c.JSON(http.StatusOK, result)
 }

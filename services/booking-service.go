@@ -9,8 +9,8 @@ import (
 
 type BookingService interface {
 	CreateBooking(booking *models.Booking) error
-	GetBookingByID(id int) (*models.Booking, error)
-	DeleteBooking(id int) error
+	GetBookingByID(id uint) (*models.Booking, error)
+	DeleteBooking(id uint) error
 	ListBookings(params QueryParams) (*PaginatedResponse, error)
 }
 
@@ -52,7 +52,7 @@ func (s *bookingService) CreateBooking(booking *models.Booking) error {
 	return nil
 }
 
-func (s *bookingService) GetBookingByID(id int) (*models.Booking, error) {
+func (s *bookingService) GetBookingByID(id uint) (*models.Booking, error) {
 	var booking models.Booking
 	if err := s.db.First(&booking, id).Error; err != nil {
 		return nil, errors.New("booking not found")
@@ -60,7 +60,7 @@ func (s *bookingService) GetBookingByID(id int) (*models.Booking, error) {
 	return &booking, nil
 }
 
-func (s *bookingService) DeleteBooking(id int) error {
+func (s *bookingService) DeleteBooking(id uint) error {
 	var booking models.Booking
 
 	// Get booking details

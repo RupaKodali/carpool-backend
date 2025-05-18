@@ -10,9 +10,9 @@ import (
 
 type RideService interface {
 	CreateRide(ride *models.Ride) error
-	GetRideByID(id int, preloads ...string) (*models.Ride, error)
+	GetRideByID(id uint, preloads ...string) (*models.Ride, error)
 	UpdateRide(existingRide *models.Ride, updates map[string]interface{}) error
-	DeleteRide(id int) error
+	DeleteRide(id uint) error
 	ListRides(params QueryParams) (*PaginatedResponse, error)
 }
 
@@ -37,7 +37,7 @@ func (s *rideService) CreateRide(ride *models.Ride) error {
 }
 
 // GetRideByID retrieves a ride by its ID
-func (s *rideService) GetRideByID(id int, preloads ...string) (*models.Ride, error) {
+func (s *rideService) GetRideByID(id uint, preloads ...string) (*models.Ride, error) {
 	var ride models.Ride
 
 	db := s.db
@@ -71,7 +71,7 @@ func (s *rideService) UpdateRide(existingRide *models.Ride, updates map[string]i
 }
 
 // DeleteRide deletes a ride by its ID
-func (s *rideService) DeleteRide(id int) error {
+func (s *rideService) DeleteRide(id uint) error {
 	if err := s.db.Delete(&models.Ride{}, id).Error; err != nil {
 		return errors.New("failed to delete ride")
 	}

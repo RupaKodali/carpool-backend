@@ -11,9 +11,9 @@ import (
 // MessageService defines methods for handling chat messages
 type MessageService interface {
 	SendMessage(message *models.Message) error
-	GetMessageHistory(userID, otherUserID int, params QueryParams) (*PaginatedResponse, error)
-	MarkMessagesAsRead(userID, conversationID int) error
-	GetConversations(userID int) ([]map[string]interface{}, error)
+	GetMessageHistory(userID, otherUserID uint, params QueryParams) (*PaginatedResponse, error)
+	MarkMessagesAsRead(userID, conversationID uint) error
+	GetConversations(userID uint) ([]map[string]interface{}, error)
 }
 
 type chatService struct {
@@ -40,10 +40,8 @@ func (s *chatService) SendMessage(message *models.Message) error {
 	if err == gorm.ErrRecordNotFound {
 		// Create a new conversation
 		newConversation := models.Conversation{
-			User1ID:   message.SenderID,
-			User2ID:   message.ReceiverID,
-			CreatedAt: time.Now(),
-			UpdatedAt: time.Now(),
+			User1ID: message.SenderID,
+			User2ID: message.ReceiverID,
 		}
 		if err := s.db.Create(&newConversation).Error; err != nil {
 			return errors.New("failed to create conversation")
@@ -63,7 +61,7 @@ func (s *chatService) SendMessage(message *models.Message) error {
 }
 
 // GetMessageHistory retrieves messages between two users
-func (s *chatService) GetMessageHistory(userID, otherUserID int, params QueryParams) (*PaginatedResponse, error) {
+func (s *chatService) GetMessageHistory(userID, otherUserID uint, params QueryParams) (*PaginatedResponse, error) {
 	var messages []models.Message
 	searchableFields := []string{"message"}
 
@@ -85,7 +83,7 @@ func (s *chatService) GetMessageHistory(userID, otherUserID int, params QueryPar
 }
 
 // MarkMessagesAsRead updates the status of unread messages to "read"
-func (s *chatService) MarkMessagesAsRead(userID, conversationID int) error {
+func (s *chatService) MarkMessagesAsRead(userID, conversationID uint) error {
 	// Update unread messages for the given conversation
 	err := s.db.Model(&models.Message{}).
 		Where("conversation_id = ? AND receiver_id = ? AND status != 'read'", conversationID, userID).
@@ -97,7 +95,7 @@ func (s *chatService) MarkMessagesAsRead(userID, conversationID int) error {
 	return nil
 }
 
-func (s *chatService) GetConversations(userID int) ([]map[string]interface{}, error) {
+func (s *chatService) GetConversations(userID uint) ([]map[string]interface{}, error) {
 	var conversations []models.Conversation
 	var result []map[string]interface{}
 
@@ -142,7 +140,7 @@ func (s *chatService) GetConversations(userID int) ([]map[string]interface{}, er
 			"conversation_id": conv.ID,
 			"chat_partner": map[string]interface{}{
 				"id":    chatPartner.ID,
-				"name":  chatPartner.Name,
+				"name":  chatPartner.FirstName + chatPartner.LastName,
 				"email": chatPartner.Email,
 			},
 			"last_message": map[string]interface{}{

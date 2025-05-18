@@ -45,10 +45,12 @@ func (h *BookingController) CreateBooking(c echo.Context) error {
 
 // GetBooking handles GET /bookings/:id
 func (h *BookingController) GetBooking(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
+	id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid booking ID"})
 	}
+
+	id := uint(id64)
 
 	booking, err := h.BookingService.GetBookingByID(id)
 	if err != nil {
@@ -67,11 +69,12 @@ func (h *BookingController) DeleteBooking(c echo.Context) error {
 	}
 
 	// Get booking ID from request param
-	id, err := strconv.Atoi(c.Param("id"))
+	id64, err := strconv.ParseUint(c.Param("id"), 10, 64)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, echo.Map{"error": "Invalid booking ID"})
 	}
 
+	id := uint(id64)
 	// Check if the logged-in user is the owner of the booking
 	booking, err := h.BookingService.GetBookingByID(id)
 	if err != nil {

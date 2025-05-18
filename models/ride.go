@@ -1,24 +1,42 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Ride struct {
-	ID             int       `json:"id" db:"id"`
-	DriverID       int       `json:"driver_id" db:"driver_id" validate:"required"`
-	Driver         User      `json:"driver" gorm:"foreignKey:DriverID;references:ID"`
-	Origin         string    `json:"origin" db:"origin" validate:"required,min=3,max=255"`
-	OriginLat      float64   `json:"origin_lat" db:"origin_lat" validate:"required"`
-	OriginLng      float64   `json:"origin_lng" db:"origin_lng" validate:"required"`
-	Destination    string    `json:"destination" db:"destination" validate:"required,min=3,max=255"`
-	DestinationLat float64   `json:"destination_lat" db:"destination_lat" validate:"required"`
-	DestinationLng float64   `json:"destination_lng" db:"destination_lng" validate:"required"`
-	DepartureAt    time.Time `json:"departure_at" db:"departure_at" validate:"required"`
-	SeatsAvailable int       `json:"seats_available" db:"seats_available" validate:"required,min=1,max=7"`
-	Route          string    `json:"route,omitempty" db:"route" validate:"omitempty"`
-	Distance       float64   `json:"distance" db:"distance" validate:"omitempty"`
-	DistanceType   string    `json:"distance_type" db:"distance_type" validate:"omitempty"`
-	Duration       string    `json:"duration" db:"duration" validate:"omitempty"`
-	Price          float64   `json:"price" db:"price" validate:"omitempty"`
-	CreatedAt      time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at" db:"updated_at"`
+	gorm.Model
+	DriverID       uint
+	Driver         User      `gorm:"foreignKey:DriverID;references:ID"`
+	Origin         Location  `gorm:"embedded;embeddedPrefix:origin_"`
+	Destination    Location  `gorm:"embedded;embeddedPrefix:destination_"`
+	DepartureAt    time.Time `json:"departure_at" gorm:"not null"`
+	SeatsAvailable uint      `json:"seats_available" gorm:"not null"`
+	Route          string    `json:"route" gorm:"type:longtext"`
+	Distance       float64   `json:"distance" `
+	DistanceType   string    `json:"distance_type" gorm:"type:longtext"`
+	Duration       string    `json:"duration" gorm:"type:longtext"`
+	Price          float64   `json:"price" `
+}
+
+type Address struct {
+	Street     string `json:"street" gorm:"column:street;type:varchar(255)"`
+	Area       string `json:"area" gorm:"column:area;type:varchar(255)"`
+	City       string `json:"city" gorm:"column:city;type:varchar(255)"`
+	State      string `json:"state" gorm:"column:state;type:varchar(100)"`
+	Country    string `json:"country" gorm:"column:country;type:varchar(100)"`
+	PostalCode string `json:"postalCode" gorm:"column:postal_code;type:varchar(20)"`
+}
+
+type Coordinates struct {
+	Latitude  float64 `json:"latitude" gorm:"column:latitude"`
+	Longitude float64 `json:"longitude" gorm:"column:longitude"`
+}
+
+type Location struct {
+	FormattedAddress string      `json:"formatted_address" gorm:"column:formatted_address;type:varchar(255)"`
+	Address          Address     `json:"address" gorm:"embedded;embeddedPrefix:address_"`
+	Coordinates      Coordinates `json:"coordinates" gorm:"embedded;embeddedPrefix:coordinates_"`
 }

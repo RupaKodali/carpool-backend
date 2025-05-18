@@ -11,8 +11,8 @@ import (
 type RequiredRideService interface {
 	CreateRequiredRide(ride *models.RequiredRide) error
 	ListRequiredRides() ([]models.RequiredRide, error)
-	DeleteRequiredRide(id int) error
-	GetRequiredRides(id int) (*models.RequiredRide, error)
+	DeleteRequiredRide(id uint) error
+	GetRequiredRides(id uint) (*models.RequiredRide, error)
 }
 
 type requiredRideService struct {
@@ -43,7 +43,7 @@ func (s *requiredRideService) ListRequiredRides() ([]models.RequiredRide, error)
 	return rides, nil
 }
 
-func (s *requiredRideService) GetRequiredRides(id int) (*models.RequiredRide, error) {
+func (s *requiredRideService) GetRequiredRides(id uint) (*models.RequiredRide, error) {
 	var ride models.RequiredRide
 
 	// Fetch ride by ID
@@ -53,7 +53,7 @@ func (s *requiredRideService) GetRequiredRides(id int) (*models.RequiredRide, er
 	return &ride, nil
 }
 
-func (s *requiredRideService) DeleteRequiredRide(id int) error {
+func (s *requiredRideService) DeleteRequiredRide(id uint) error {
 	// Delete the required ride
 	if err := s.db.Delete(&models.RequiredRide{}, id).Error; err != nil {
 		return errors.New("failed to delete required ride")

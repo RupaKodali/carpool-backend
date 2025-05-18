@@ -1,12 +1,16 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type RequiredRide struct {
-	ID          int       `json:"id" db:"id"`
-	UserID      int       `json:"user_id" db:"user_id" validate:"required"`
-	Origin      string    `json:"origin" db:"origin" validate:"required,min=3,max=255"`
-	Destination string    `json:"destination" db:"destination" validate:"required,min=3,max=255"`
-	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at" db:"updated_at"`
+	gorm.Model
+	UserID      uint
+	User        User      `gorm:"foreignKey:UserID;references:ID"`
+	Origin      Location  `gorm:"embedded;embeddedPrefix:origin_"`
+	Destination Location  `gorm:"embedded;embeddedPrefix:destination_"`
+	DepartureAt time.Time `gorm:"not null"`
 }

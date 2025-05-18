@@ -150,9 +150,10 @@ func DecodePolyline(encoded string) ([]Point, error) {
 	return points, nil
 }
 
-// Haversine calculates the distance in kilometers between two geographic coordinates
+// Haversine calculates the distance in miles between two geographic coordinates
 func Haversine(lat1, lon1, lat2, lon2 float64) float64 {
-	const earthRadius = 6371.0
+	// const earthRadius = 6371.0 //-----------km
+	const earthRadius = 3958.8 //-----------miles
 
 	// Convert latitude and longitude to radians
 	lat1 = lat1 * math.Pi / 180
