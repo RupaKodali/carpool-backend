@@ -17,7 +17,7 @@ type User struct {
 	IsDriver         bool    `json:"is_driver" `
 	IsEmailVerified  bool    `json:"is_email_verified" `
 	IsMobileVerified bool    `json:"is_mobile_verified" `
-	GoogleID         string  `json:"google_id,omitempty" gorm:"type:varchar(255);uniqueIndex"`
+	GoogleID         *string `gorm:"type:varchar(255);uniqueIndex"`
 	AuthProvider     string  `json:"auth_provider" gorm:"type:enum('email','google');default:'email'"`
 	LicenseNumber    string  `json:"license_number" gorm:"type:varchar(20)"`
 }

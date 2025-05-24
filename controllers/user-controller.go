@@ -156,7 +156,7 @@ func (h *UserController) GoogleLogin(c echo.Context) error {
 			FirstName:    firstname,
 			LastName:     lastname,
 			Username:     name,
-			GoogleID:     sub,
+			GoogleID:     &sub,
 			AuthProvider: "google",
 		}
 		if err := h.UserService.CreateUser(user); err != nil {
